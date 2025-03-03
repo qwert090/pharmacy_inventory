@@ -30,11 +30,14 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<Page<UserDto>> getUsers(
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION) String jwt,
             @RequestParam(required = false, name = "first-name") String firstName,
             @RequestParam(required = false, name = "last-name") String lastName,
             @RequestParam(required = false, name = "email") String email,
             @PageableDefault(sort = "firstName") Pageable pageable
     ) {
+        String token = ApplicationUtils.extractJwtFromBearerToken(jwt);
+        SessionDto sessionDto = authServiceClient.getSession(token).getBody();
         log.info("Request for users /api/v1/users with parameters: firstname={}, lastname={}, email={}.",
                 firstName, lastName, email);
         UserFilterDto userFilter = new UserFilterDto(firstName, lastName, email);
@@ -42,7 +45,10 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUser(@PathVariable(name = "id") UUID userId) {
+    public ResponseEntity<UserDto> getUser(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String jwt,
+                                           @PathVariable(name = "id") UUID userId) {
+        String token = ApplicationUtils.extractJwtFromBearerToken(jwt);
+        SessionDto sessionDto = authServiceClient.getSession(token).getBody();
         log.info("Request for user /api/v1/users/{}", userId);
         return ResponseEntity.ok(userService.getUserById(userId));
     }

@@ -1,0 +1,88 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    container_name: pharmacy_inventory_postgres
+    environment:
+      POSTGRES_DB: pharmacy_inventory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  discovery-server:
+    build:
+      context: ./discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      - postgres
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8003:8003"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DATASOURCE_URL=jdbc:postgresql://postgres:5432/pharmacy_inventory
+      - DATASOURCE_USERNAME=postgres
+      - DATASOURCE_PASSWORD=admin
+    depends_on:
+      - discovery-server
+      - postgres
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - "8002:8002"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DATASOURCE_URL=jdbc:postgresql://postgres:5432/pharmacy_inventory
+      - DATASOURCE_USERNAME=postgres
+      - DATASOURCE_PASSWORD=admin
+    depends_on:
+      - discovery-server
+      - postgres
+
+  medication-service:
+    build:
+      context: ./medication-service
+    container_name: medication-service
+    ports:
+      - "8004:8004"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DATASOURCE_URL=jdbc:postgresql://postgres:5432/pharmacy_inventory
+      - DATASOURCE_USERNAME=postgres
+      - DATASOURCE_PASSWORD=admin
+    depends_on:
+      - discovery-server
+      - postgres
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - "8005:8005"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DATASOURCE_URL=jdbc:postgresql://postgres:5432/pharmacy_inventory
+      - DATASOURCE_USERNAME=postgres
+      - DATASOURCE_PASSWORD=admin
+    depends_on:
+      - discovery-server
+      - postgres
+
+volumes:
+  postgres_data: # volume для хранения данных PostgreSQL
